@@ -97,13 +97,16 @@ def game_kickoff_cest(game):
     naive = datetime.datetime.strptime(f"{game['date']} {game['time']}", "%Y-%m-%d %H:%M")
     return CEST.localize(naive)
 
-def is_tippable(game):
-    return datetime.datetime.now(CEST) < game_kickoff_cest(game)
-
 def first_game_kickoff():
     return min(game_kickoff_cest(g) for g in GAMES)
 
+def is_tippable(game):
+    # Zamkne se výlučně časem výkopu daného zápasu.
+    # Zadání výsledku adminem NEZAMYKÁ tipování.
+    return datetime.datetime.now(CEST) < game_kickoff_cest(game)
+
 def champion_pick_open():
+    # Tip na vítěze se uzavře spolu s prvním výkopem turnaje.
     return datetime.datetime.now(CEST) < first_game_kickoff()
 
 GAMES_BY_ID = {g["id"]: g for g in GAMES}
@@ -353,7 +356,7 @@ def leaderboard():
             users = [r["name"] for r in cur.fetchall()]
             cur.execute("SELECT game_id, home_score, away_score FROM results")
             results = {r["game_id"]: dict(r) for r in cur.fetchall()}
-            cur.execute("SELECT user_name, team FROM champion_picks WHERE user_name!='__result__'")
+            cur.execute("SELECT user_name, team FROM champion_picks WHERE user_name NOT IN ('__result__', %s)", (ADMIN,))
             champ_picks = {r["user_name"]: r["team"] for r in cur.fetchall()}
             cur.execute("SELECT team FROM champion_picks WHERE user_name='__result__'")
             cr = cur.fetchone()
@@ -370,11 +373,8 @@ def leaderboard():
                     total += p
                     if p==3: exact+=1
                     if p==1: correct+=1
-                champ_bonus = 0
-                if champ_result and champ_picks.get(name)==champ_result:
-                    champ_bonus = 5; total += 5
                 rows.append({"name":name,"total":total,"exact":exact,"correct":correct,
-                             "champ_pick":champ_picks.get(name),"champ_bonus":champ_bonus})
+                             "champ_pick":champ_picks.get(name)})
     rows.sort(key=lambda x: x["total"], reverse=True)
     return jsonify(leaderboard=rows, champion_result=champ_result)
 

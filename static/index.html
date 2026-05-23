@@ -645,11 +645,11 @@ async function renderLeaderboard() {
         <div class="lb-right">
           <span class="lb-stat">🎯${r.exact}</span>
           <span class="lb-stat">✅${r.correct}</span>
-          ${r.champ_pick?`<span class="lb-champ">🏆${r.champ_pick}${r.champ_bonus>0?" +5":""}` +`</span>`:""}
+          ${r.champ_pick?`<span class="lb-champ">🏆 ${r.champ_pick}</span>`:""}
           <span class="lb-pts">${r.total} b.</span>
         </div>
       </div>`).join("") +
-      `<p class="lb-note">🎯 přesný výsledek = 3 b. · ✅ správný výsledek = 1 b. · 🏆 vítěz šampionátu = 5 b.</p>`;
+      `<p class="lb-note">🎯 přesný výsledek = 3 b. · ✅ správný výsledek (vítěz nebo remíza) = 1 b.</p>`;
   } catch(e) {
     el.innerHTML = `<p class="empty">Chyba: ${e.message}</p>`;
   }
@@ -710,45 +710,57 @@ async function renderTipsOverview() {
   const el = document.getElementById("tips-overview");
   el.innerHTML = '<div class="spinner">⏳ Načítám...</div>';
   try {
-    const {users, tips: allTips, champion_picks} = await api("/api/admin/all-tips");
+    // Nacti data z API
+    const data = await api("/api/admin/all-tips");
+    const users = data.users || [];
+    const allTips = data.tips || {};
+    const champPicks = data.champion_picks || {};
+
     if (!users.length) { el.innerHTML='<p class="empty">Žádní hráči.</p>'; return; }
 
-    // Tabulka: řádky = hráči, sloupce = skupiny
-    const groups = [...new Set(games.map(g=>g.group))].sort();
-    let html = `<div style="overflow-x:auto">
+    // Zobraz vsechny zapasy serazene chronologicky (uz serazene ze serveru)
+    const shownGames = [...games]; // kopie, uz serazene
+
+    let html = `<div style="overflow-x:auto; margin-top:8px;">
       <table class="tips-table">
         <thead><tr>
-          <th>Hráč</th>
+          <th style="position:sticky;left:0;background:#0a1628;z-index:2;">Hráč</th>
           <th>🏆 Vítěz</th>`;
-    // Jen odehrané nebo blízké zápasy
-    const shownGames = games.filter(g => results[g.id] || !g.tippable);
+
     shownGames.forEach(g => {
-      html += `<th>${g.display_date} ${g.home} vs ${g.away}</th>`;
+      const hasResult = !!results[g.id];
+      const locked = !g.tippable;
+      const style = hasResult ? 'color:var(--gold)' : locked ? 'color:var(--muted)' : '';
+      html += `<th style="${style}" title="${g.home} vs ${g.away}">`
+            + `${g.group} ${g.display_date}<br><small>${g.home} – ${g.away}</small></th>`;
     });
     html += `</tr></thead><tbody>`;
 
     users.forEach(name => {
       const ut = allTips[name] || {};
-      html += `<tr><td><strong>${name}</strong></td>`;
-      html += `<td class="tip-cell">${champion_picks[name]||'<span class="no-tip">–</span>'}</td>`;
+      html += `<tr><td style="position:sticky;left:0;background:#0d1a2e;font-weight:700;">${name}</td>`;
+      html += `<td class="tip-cell" style="white-space:nowrap">${champPicks[name] || '<span class="no-tip">–</span>'}</td>`;
       shownGames.forEach(g => {
         const t = ut[g.id];
         const r = results[g.id];
         const pts = calcPoints(t, r);
         if (!t) {
-          html += `<td class="no-tip">–</td>`;
+          html += `<td class="no-tip" title="Bez tipu">–</td>`;
         } else {
-          const ptsTxt = pts===3?"🎯":pts===1?"✅":r?"❌":"";
-          html += `<td class="tip-cell">${t.home_score}:${t.away_score} ${ptsTxt}</td>`;
+          const icon = pts===3 ? "🎯" : pts===1 ? "✅" : r ? "❌" : "";
+          html += `<td class="tip-cell" style="white-space:nowrap">${t.home_score}:${t.away_score} ${icon}</td>`;
         }
       });
       html += `</tr>`;
     });
+
     html += `</tbody></table></div>
-      <p style="font-size:11px; color:var(--muted); margin-top:8px;">Zobrazeny pouze zápasy s výsledkem nebo uzavřené.</p>`;
+      <p style="font-size:11px;color:var(--muted);margin-top:6px;">
+        🎯 přesný výsledek · ✅ správný · ❌ špatně · – bez tipu
+      </p>`;
     el.innerHTML = html;
   } catch(e) {
-    el.innerHTML = `<p class="empty">Chyba: ${e.message}</p>`;
+    el.innerHTML = `<p class="empty">Chyba načítání tipů: ${e.message}</p>`;
   }
 }
 </script>
