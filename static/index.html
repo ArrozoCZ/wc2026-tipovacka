@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>MS Fotbal 2026 – Tipovačka</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:     #0a1628;
+  --bg2:    #102040;
+  --card:   rgba(255,255,255,0.06);
+  --border: rgba(255,255,255,0.12);
+  --red:    #c0392b;
+  --blue:   #1a56a0;
+  --gold:   #f1c40f;
+  --green:  #27ae60;
+  --text:   #ecf0f1;
+  --muted:  #7fb3d3;
+  --warn:   #e67e22;
+}
+body {
+  background: linear-gradient(160deg, var(--bg) 0%, var(--bg2) 60%, var(--bg) 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: var(--text);
+  padding-bottom: 80px;
+}
+input, button, select { font-family: inherit; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+/* ── LOGIN ─────────────────────────────────────────────────────── */
+#login-screen { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px; }
+.login-card {
+  background: rgba(10,22,40,0.96);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 40px 28px;
+  max-width: 380px; width: 100%;
+  text-align: center;
+}
+.login-logo  { font-size:52px; margin-bottom:8px; }
+.login-title { font-size:26px; font-weight:800; color:#fff; letter-spacing:-1px; margin-bottom:4px; }
+.login-sub   { color:var(--muted); font-size:14px; margin-bottom:24px; }
+.tab-row     { display:flex; background:rgba(0,0,0,0.4); border-radius:10px; padding:3px; margin-bottom:20px; }
+.tab { flex:1; padding:9px 0; background:transparent; border:none; color:var(--muted); cursor:pointer; border-radius:8px; font-size:14px; font-weight:600; }
+.tab.active  { background:var(--red); color:#fff; }
+.field {
+  display:block; width:100%;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.20);
+  border-radius: 10px;
+  padding: 13px 14px;
+  color: #fff; -webkit-text-fill-color: #fff;
+  font-size: 15px; margin-bottom: 12px; outline: none;
+}
+.field::placeholder { color: rgba(255,255,255,0.35); }
+.field:focus { border-color: rgba(255,255,255,0.45); }
+.error-msg  { color:#e74c3c; font-size:13px; margin-bottom:12px; min-height:18px; }
+.btn-primary {
+  width:100%; padding:13px 0;
+  background:var(--red); border:none; border-radius:10px;
+  color:#fff; font-weight:800; font-size:16px; cursor:pointer;
+}
+.btn-primary:disabled { opacity:.55; cursor:not-allowed; }
+.login-hint { color:var(--muted); font-size:13px; margin-top:14px; }
+
+/* ── APP ───────────────────────────────────────────────────────── */
+#app-screen { display:none; }
+.app-header { display:flex; align-items:center; justify-content:space-between; padding:16px 16px 0; }
+.app-title  { font-size:20px; font-weight:900; letter-spacing:-0.5px; }
+.app-sub    { font-size:13px; color:var(--muted); margin-top:2px; }
+.btn-logout {
+  background:rgba(255,255,255,0.08); border:1px solid var(--border);
+  color:var(--muted); border-radius:8px; padding:6px 13px; cursor:pointer; font-size:13px;
+}
+
+/* NAV */
+.nav { display:flex; gap:6px; padding:12px 16px 0; overflow-x:auto; }
+.nav-btn {
+  flex-shrink:0; padding:9px 14px;
+  background:var(--card); border:1px solid var(--border);
+  border-radius:10px; color:var(--muted);
+  cursor:pointer; font-weight:700; font-size:13px; white-space:nowrap;
+}
+.nav-btn.active { background:var(--red); border-color:var(--red); color:#fff; }
+
+/* FILTERS */
+.filters { display:flex; gap:6px; padding:10px 16px 4px; overflow-x:auto; }
+.filter-btn {
+  flex-shrink:0; padding:5px 12px;
+  background:var(--card); border:1px solid var(--border);
+  border-radius:20px; color:var(--muted);
+  cursor:pointer; font-size:12px; font-weight:600;
+}
+.filter-btn.active { background:var(--blue); border-color:#3b82f6; color:#fff; }
+
+/* GAME CARDS */
+.game-list  { padding:8px 16px; display:flex; flex-direction:column; gap:8px; }
+.game-card  {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:14px; padding:11px 13px;
+}
+.game-card.done   { border-color:rgba(192,57,43,0.35); }
+.game-card.locked { opacity:.7; }
+
+.card-header { display:flex; align-items:center; gap:7px; margin-bottom:7px; }
+.grp-badge   { background:var(--blue); color:#fff; border-radius:5px; font-size:11px; font-weight:800; padding:2px 7px; }
+.game-date   { font-size:12px; color:var(--muted); flex:1; }
+.pts-badge   { font-size:12px; font-weight:700; padding:2px 8px; border-radius:20px; }
+.pts-gold    { background:rgba(241,196,15,0.18); color:var(--gold); }
+.pts-silver  { background:rgba(39,174,96,0.18);  color:#2ecc71; }
+.pts-gray    { background:rgba(255,255,255,0.08); color:#95a5a6; }
+.countdown   { font-size:11px; color:var(--warn); font-weight:700; margin-left:auto; }
+
+.teams   { display:flex; align-items:center; margin-bottom:8px; gap:4px; }
+.team-l  { flex:1; font-size:14px; font-weight:700; }
+.team-r  { flex:1; font-size:14px; font-weight:700; text-align:right; }
+.mid     { width:58px; text-align:center; flex-shrink:0; }
+.vs-label    { color:var(--muted); font-size:13px; font-weight:600; }
+.final-score { color:var(--gold); font-size:17px; font-weight:900; }
+.lock-icon   { font-size:14px; color:var(--muted); }
+
+.tip-row  { display:flex; align-items:center; gap:8px; margin-top:3px; }
+.tip-lbl  { font-size:12px; color:var(--muted); width:62px; flex-shrink:0; }
+.score-row { display:flex; align-items:center; gap:5px; }
+.score-box {
+  width:42px; padding:5px 4px;
+  background:rgba(255,255,255,0.10); border:1px solid rgba(255,255,255,0.20);
+  border-radius:8px; color:#fff; -webkit-text-fill-color:#fff;
+  font-size:16px; font-weight:700; text-align:center; outline:none;
+  -moz-appearance:textfield;
+}
+.score-box::-webkit-inner-spin-button,
+.score-box::-webkit-outer-spin-button { -webkit-appearance:none; }
+.score-box:disabled { opacity:.35; }
+.score-sep { color:var(--muted); font-weight:800; font-size:16px; }
+
+.admin-tip-row { margin-top:7px; padding-top:7px; border-top:1px solid rgba(255,255,255,0.07); }
+
+/* ── CHAMPION ──────────────────────────────────────────────────── */
+.champion-card {
+  margin:8px 16px;
+  background: linear-gradient(135deg, rgba(241,196,15,0.08), rgba(192,57,43,0.06));
+  border:1px solid rgba(241,196,15,0.3);
+  border-radius:14px; padding:16px;
+}
+.champion-title { font-size:16px; font-weight:800; color:var(--gold); margin-bottom:4px; }
+.champion-sub   { font-size:13px; color:var(--muted); margin-bottom:14px; }
+.champion-grid  {
+  display:grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap:6px;
+}
+.team-btn {
+  padding:7px 10px; border:1px solid var(--border);
+  background:var(--card); border-radius:8px;
+  color:var(--text); cursor:pointer; font-size:13px; font-weight:600;
+  text-align:left; transition:all .15s;
+}
+.team-btn:hover { background:rgba(255,255,255,0.1); }
+.team-btn.selected { background:var(--gold); border-color:var(--gold); color:#000; }
+.team-btn:disabled { opacity:.4; cursor:not-allowed; }
+.champion-result-badge {
+  display:inline-flex; align-items:center; gap:8px;
+  background:rgba(241,196,15,0.15); border:1px solid var(--gold);
+  border-radius:10px; padding:8px 14px; margin-top:10px; font-weight:700; color:var(--gold);
+}
+
+/* ── LEADERBOARD ───────────────────────────────────────────────── */
+.lb-wrap     { padding:8px 16px; }
+.section-title { font-size:18px; font-weight:900; margin:6px 0 12px; }
+.lb-row {
+  display:flex; align-items:center; gap:8px;
+  background:var(--card); border:1px solid var(--border);
+  border-radius:12px; padding:11px 13px; margin-bottom:7px;
+}
+.lb-row.me   { border-color:var(--red); background:rgba(192,57,43,0.1); }
+.lb-pos  { width:30px; font-size:18px; text-align:center; }
+.lb-name { flex:1; font-size:14px; font-weight:700; }
+.lb-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.lb-stat { font-size:12px; color:var(--muted); }
+.lb-pts  { font-size:17px; font-weight:900; color:var(--gold); min-width:46px; text-align:right; }
+.lb-champ { font-size:11px; color:var(--gold); background:rgba(241,196,15,0.1); padding:2px 7px; border-radius:10px; }
+.lb-note { font-size:12px; color:var(--muted); text-align:center; margin-top:10px; }
+
+/* ── ADMIN PANEL ───────────────────────────────────────────────── */
+.admin-section { padding:8px 16px; }
+.admin-panel-title { font-size:16px; font-weight:800; color:var(--warn); margin:12px 0 8px; }
+.user-list { display:flex; flex-direction:column; gap:6px; }
+.user-row {
+  display:flex; align-items:center; gap:10px;
+  background:var(--card); border:1px solid var(--border);
+  border-radius:10px; padding:10px 13px;
+}
+.user-name { flex:1; font-size:14px; font-weight:600; }
+.btn-del {
+  background:rgba(192,57,43,0.2); border:1px solid var(--red);
+  color:var(--red); border-radius:7px; padding:5px 11px;
+  cursor:pointer; font-size:12px; font-weight:700;
+}
+.btn-del:hover { background:rgba(192,57,43,0.4); }
+
+/* Tips view table */
+.tips-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:8px; }
+.tips-table th { background:rgba(255,255,255,0.08); padding:6px 8px; text-align:left; font-weight:700; color:var(--muted); }
+.tips-table td { padding:5px 8px; border-bottom:1px solid rgba(255,255,255,0.05); }
+.tips-table tr:hover td { background:rgba(255,255,255,0.03); }
+.tip-cell { font-weight:700; color:var(--gold); }
+.no-tip   { color:#555; }
+
+/* Champion admin */
+.champion-admin-row { display:flex; align-items:center; gap:8px; margin-top:10px; }
+.champion-select {
+  flex:1; padding:8px 10px;
+  background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);
+  border-radius:8px; color:#fff; font-size:14px; outline:none;
+}
+.champion-select option { background:#102040; }
+.btn-set-champ {
+  padding:8px 14px; background:var(--gold); border:none; border-radius:8px;
+  color:#000; font-weight:800; font-size:13px; cursor:pointer;
+}
+
+.empty   { color:var(--muted); text-align:center; padding:24px; }
+.spinner { color:var(--muted); text-align:center; padding:40px; font-size:15px; }
+.admin-tag {
+  position:fixed; bottom:16px; right:16px;
+  background:rgba(241,196,15,0.12); border:1px solid var(--gold);
+  border-radius:20px; padding:6px 14px;
+  font-size:13px; color:var(--gold); font-weight:700; display:none;
+}
+
+/* Responsive */
+@media(max-width:400px) {
+  .team-l, .team-r { font-size:12px; }
+  .champion-grid { grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">⚽</div>
+    <h1 class="login-title">MS Fotbal 2026</h1>
+    <p class="login-sub">USA, Kanada & Mexiko · 11 června – 19 července</p>
+    <div class="tab-row">
+      <button class="tab" id="tab-login" onclick="switchMode('login')">Přihlásit se</button>
+      <button class="tab active" id="tab-reg" onclick="switchMode('register')">Registrovat</button>
+    </div>
+    <input class="field" id="inp-name" type="text" placeholder="Tvé jméno" autocomplete="username" />
+    <input class="field" id="inp-pin" type="password" placeholder="PIN (min. 2 znaky)" autocomplete="current-password" />
+    <div class="error-msg" id="login-error"></div>
+    <button class="btn-primary" id="btn-submit" onclick="handleAuth()">Vytvořit profil →</button>
+    <p class="login-hint" id="login-hint"></p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen">
+  <div class="app-header">
+    <div>
+      <div class="app-title">⚽ MS Fotbal 2026</div>
+      <div class="app-sub" id="app-sub"></div>
+    </div>
+    <button class="btn-logout" onclick="logout()">Odhlásit</button>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" id="nav-tips"    onclick="switchView('tips')">📋 Tipy</button>
+    <button class="nav-btn"        id="nav-champ"   onclick="switchView('champ')">🏆 Vítěz</button>
+    <button class="nav-btn"        id="nav-lb"      onclick="switchView('lb')">📊 Žebříček</button>
+    <button class="nav-btn"        id="nav-admin"   onclick="switchView('admin')" style="display:none">⚙️ Admin</button>
+  </div>
+
+  <!-- TIPY -->
+  <div id="view-tips">
+    <div class="filters">
+      <button class="filter-btn active" onclick="setFilter('all',this)">Vše</button>
+      <button class="filter-btn" onclick="setFilter('A',this)">A</button>
+      <button class="filter-btn" onclick="setFilter('B',this)">B</button>
+      <button class="filter-btn" onclick="setFilter('C',this)">C</button>
+      <button class="filter-btn" onclick="setFilter('D',this)">D</button>
+      <button class="filter-btn" onclick="setFilter('E',this)">E</button>
+      <button class="filter-btn" onclick="setFilter('F',this)">F</button>
+      <button class="filter-btn" onclick="setFilter('G',this)">G</button>
+      <button class="filter-btn" onclick="setFilter('H',this)">H</button>
+      <button class="filter-btn" onclick="setFilter('I',this)">I</button>
+      <button class="filter-btn" onclick="setFilter('J',this)">J</button>
+      <button class="filter-btn" onclick="setFilter('K',this)">K</button>
+      <button class="filter-btn" onclick="setFilter('L',this)">L</button>
+      <button class="filter-btn" onclick="setFilter('open',this)">Otevřené</button>
+      <button class="filter-btn" onclick="setFilter('untipped',this)">Bez tipu</button>
+    </div>
+    <div class="game-list" id="game-list"></div>
+  </div>
+
+  <!-- VÍTĚZ ŠAMPIONÁTU -->
+  <div id="view-champ" style="display:none">
+    <div class="champion-card" id="champ-card">
+      <div class="spinner">⏳ Načítám...</div>
+    </div>
+  </div>
+
+  <!-- ŽEBŘÍČEK -->
+  <div id="view-lb" style="display:none">
+    <div class="lb-wrap">
+      <h2 class="section-title">📊 Žebříček</h2>
+      <div id="lb-content"><div class="spinner">⏳ Načítám...</div></div>
+    </div>
+  </div>
+
+  <!-- ADMIN PANEL -->
+  <div id="view-admin" style="display:none">
+    <div class="admin-section">
+      <h2 class="section-title">⚙️ Admin panel</h2>
+
+      <!-- Vítěz šampionátu -->
+      <div class="admin-panel-title">🏆 Nastavit vítěze šampionátu</div>
+      <div class="champion-admin-row">
+        <select class="champion-select" id="champ-select"></select>
+        <button class="btn-set-champ" onclick="setChampionResult()">Uložit</button>
+      </div>
+      <div id="current-champ-result" style="margin-top:8px; font-size:13px; color:var(--gold);"></div>
+
+      <!-- Správa uživatelů -->
+      <div class="admin-panel-title">👥 Hráči</div>
+      <div class="user-list" id="user-list"><div class="spinner">⏳ Načítám...</div></div>
+
+      <!-- Přehled tipů -->
+      <div class="admin-panel-title">📋 Tipy hráčů</div>
+      <div id="tips-overview"><div class="spinner">⏳ Načítám...</div></div>
+    </div>
+  </div>
+
+  <div class="admin-tag" id="admin-tag">⚙️ Admin mód</div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+let currentUser = null, curView = "tips", curFilter = "all", authMode = "register";
+let games = [], tips = {}, results = {}, pollIv = null;
+const isAdmin = () => currentUser === "Admin";
+
+// ── UTILS ──────────────────────────────────────────────────────────────────
+function calcPoints(tip, res) {
+  if (!tip || !res) return null;
+  const [th, ta, rh, ra] = [tip.home_score, tip.away_score, res.home_score, res.away_score];
+  if (th===rh && ta===ra) return 3;
+  const w = (h,a) => h>a?"H":h<a?"A":"D";
+  return w(th,ta)===w(rh,ra) ? 1 : 0;
+}
+
+async function api(path, method="GET", body=null) {
+  const opts = {method, credentials:"include", headers:{"Content-Type":"application/json"}};
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(path, opts);
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || "Chyba serveru");
+  return d;
+}
+
+function fmtCountdown(mins) {
+  if (mins <= 0) return "";
+  if (mins < 60) return `⏰ ${mins} min`;
+  const h = Math.floor(mins/60), m = mins%60;
+  return `⏰ ${h}h ${m>0?m+"min":""}`;
+}
+
+// ── AUTH ───────────────────────────────────────────────────────────────────
+function switchMode(m) {
+  authMode = m;
+  document.getElementById("tab-login").classList.toggle("active", m==="login");
+  document.getElementById("tab-reg").classList.toggle("active", m==="register");
+  document.getElementById("btn-submit").textContent = m==="login" ? "Vstoupit →" : "Vytvořit profil →";
+  document.getElementById("login-hint").textContent = m==="login" ? "Poprvé? Přepni na Registrovat." : "";
+  document.getElementById("login-error").textContent = "";
+}
+
+async function handleAuth() {
+  const name = document.getElementById("inp-name").value.trim();
+  const pin  = document.getElementById("inp-pin").value;
+  const err  = document.getElementById("login-error");
+  const btn  = document.getElementById("btn-submit");
+  if (!name || pin.length < 2) { err.textContent = "Zadej jméno a PIN (min. 2 znaky)"; return; }
+  btn.disabled = true; btn.textContent = "⏳ Moment..."; err.textContent = "";
+  try {
+    await api(authMode==="login" ? "/api/login" : "/api/register", "POST", {name, pin});
+    await loadApp(name);
+  } catch(e) {
+    err.textContent = e.message;
+    btn.disabled = false;
+    btn.textContent = authMode==="login" ? "Vstoupit →" : "Vytvořit profil →";
+  }
+}
+
+async function logout() {
+  await api("/api/logout","POST");
+  clearInterval(pollIv);
+  currentUser=null; games=[]; tips={}; results={};
+  document.getElementById("app-screen").style.display="none";
+  document.getElementById("login-screen").style.display="flex";
+  document.getElementById("inp-name").value="";
+  document.getElementById("inp-pin").value="";
+  switchMode("login");
+}
+
+// ── APP INIT ───────────────────────────────────────────────────────────────
+async function loadApp(name) {
+  currentUser = name;
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("app-screen").style.display = "block";
+  document.getElementById("admin-tag").style.display = isAdmin() ? "block" : "none";
+  document.getElementById("nav-admin").style.display = isAdmin() ? "inline-block" : "none";
+
+  const [gData, tData, rData] = await Promise.all([
+    api("/api/games"), api("/api/tips"), api("/api/results")
+  ]);
+  games = gData.games;
+  tips  = tData.tips;
+  results = rData.results;
+  updateHeader();
+  renderGames();
+
+  clearInterval(pollIv);
+  pollIv = setInterval(async () => {
+    const [gData2, rData2] = await Promise.all([api("/api/games"), api("/api/results")]);
+    games = gData2.games; results = rData2.results;
+    updateHeader(); renderGames();
+    if (curView==="lb") renderLeaderboard();
+  }, 30000);
+}
+
+window.addEventListener("load", async () => {
+  switchMode("register");
+  try {
+    const d = await api("/api/me");
+    if (d.name) await loadApp(d.name);
+  } catch {}
+});
+document.getElementById("inp-pin").addEventListener("keydown", e => { if(e.key==="Enter") handleAuth(); });
+document.getElementById("inp-name").addEventListener("keydown", e => { if(e.key==="Enter") handleAuth(); });
+
+// ── VIEWS ──────────────────────────────────────────────────────────────────
+function switchView(v) {
+  curView = v;
+  ["tips","champ","lb","admin"].forEach(n => {
+    document.getElementById(`nav-${n}`).classList.toggle("active", n===v);
+    document.getElementById(`view-${n}`).style.display = n===v ? "block" : "none";
+  });
+  if (v==="lb")    renderLeaderboard();
+  if (v==="champ") renderChampion();
+  if (v==="admin") renderAdminPanel();
+}
+
+function setFilter(f, btn) {
+  curFilter = f;
+  document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  renderGames();
+}
+
+function updateHeader() {
+  const pts   = games.reduce((s,g) => s + (calcPoints(tips[g.id], results[g.id]) || 0), 0);
+  const tipped = games.filter(g => tips[g.id]).length;
+  document.getElementById("app-sub").innerHTML =
+    `Ahoj, <strong>${currentUser}</strong> · ${pts} bodů · ${tipped}/${games.length} tipů`;
+}
+
+// ── GAMES ──────────────────────────────────────────────────────────────────
+function renderGames() {
+  const list = document.getElementById("game-list");
+  const filtered = games.filter(g => {
+    if (curFilter === "open")     return g.tippable;
+    if (curFilter === "untipped") return !tips[g.id] && g.tippable;
+    if (curFilter.length === 1)   return g.group === curFilter;
+    return true;
+  });
+  if (!filtered.length) { list.innerHTML='<p class="empty">Žádné zápasy.</p>'; return; }
+  list.innerHTML = filtered.map(gameCardHTML).join("");
+}
+
+function gameCardHTML(g) {
+  const tip  = tips[g.id];
+  const res  = results[g.id];
+  const done = !!res;
+  const pts  = calcPoints(tip, res);
+
+  let ptsBadge = "";
+  if (pts !== null) {
+    const cls = pts===3?"pts-gold":pts===1?"pts-silver":"pts-gray";
+    const lbl = pts===3?"🎯 +3":pts===1?"✅ +1":"❌ 0";
+    ptsBadge = `<span class="pts-badge ${cls}">${lbl}</span>`;
+  }
+
+  const midHtml = done
+    ? `<span class="final-score">${res.home_score}:${res.away_score}</span>`
+    : g.tippable
+      ? `<span class="vs-label">vs</span>`
+      : `<span class="lock-icon">🔒</span>`;
+
+  const countdown = g.show_countdown
+    ? `<span class="countdown">${fmtCountdown(g.minutes_to_kickoff)}</span>` : "";
+
+  const tipH = tip ? tip.home_score : "";
+  const tipA = tip ? tip.away_score : "";
+  const dis  = (!g.tippable || done) ? "disabled" : "";
+
+  const adminRow = isAdmin() ? `
+    <div class="tip-row admin-tip-row">
+      <span class="tip-lbl" style="color:#f1c40f">Výsledek:</span>
+      <div class="score-row">
+        <input class="score-box" type="number" min="0" max="30" value="${done?res.home_score:""}" placeholder="–"
+          onchange="saveResult('${g.id}','home',this.value)">
+        <span class="score-sep">:</span>
+        <input class="score-box" type="number" min="0" max="30" value="${done?res.away_score:""}" placeholder="–"
+          onchange="saveResult('${g.id}','away',this.value)">
+      </div>
+    </div>` : "";
+
+  const cardCls = done ? "game-card done" : !g.tippable ? "game-card locked" : "game-card";
+
+  return `
+    <div class="${cardCls}">
+      <div class="card-header">
+        <span class="grp-badge">${g.group}</span>
+        <span class="game-date">${g.display_date} · ${g.display_time} SELČ</span>
+        ${ptsBadge}
+        ${countdown}
+      </div>
+      <div class="teams">
+        <span class="team-l">${g.home}</span>
+        <div class="mid">${midHtml}</div>
+        <span class="team-r">${g.away}</span>
+      </div>
+      <div class="tip-row">
+        <span class="tip-lbl">Tvůj tip:</span>
+        <div class="score-row">
+          <input class="score-box" type="number" min="0" max="30" value="${tipH}" placeholder="–" ${dis}
+            id="tip-h-${g.id}" onchange="onScoreChange('${g.id}')">
+          <span class="score-sep">:</span>
+          <input class="score-box" type="number" min="0" max="30" value="${tipA}" placeholder="–" ${dis}
+            id="tip-a-${g.id}" onchange="onScoreChange('${g.id}')">
+        </div>
+      </div>
+      ${adminRow}
+    </div>`;
+}
+
+// ── TIP SAVING ─────────────────────────────────────────────────────────────
+const tipTimers = {};
+function onScoreChange(gid) {
+  clearTimeout(tipTimers[gid]);
+  tipTimers[gid] = setTimeout(() => flushTip(gid), 700);
+}
+async function flushTip(gid) {
+  const h = document.getElementById(`tip-h-${gid}`)?.value;
+  const a = document.getElementById(`tip-a-${gid}`)?.value;
+  if (h===""||a==="") return;
+  try {
+    await api("/api/tips","POST",{game_id:gid, home_score:+h, away_score:+a});
+    tips[gid] = {home_score:+h, away_score:+a};
+    updateHeader();
+  } catch(e) { alert("Tip se nepodařilo uložit: "+e.message); }
+}
+
+const resBuffers = {}, resTimers = {};
+function saveResult(gid, side, val) {
+  if (!resBuffers[gid]) resBuffers[gid] = {...results[gid]};
+  resBuffers[gid][side==="home"?"home_score":"away_score"] = val;
+  clearTimeout(resTimers[gid]);
+  resTimers[gid] = setTimeout(async () => {
+    const b = resBuffers[gid];
+    if (b.home_score===""||b.away_score==="") return;
+    try {
+      await api("/api/results","POST",{game_id:gid, home_score:+b.home_score, away_score:+b.away_score});
+      results[gid] = {home_score:+b.home_score, away_score:+b.away_score};
+      renderGames(); updateHeader();
+    } catch(e) { alert("Výsledek se nepodařilo uložit: "+e.message); }
+  }, 700);
+}
+
+// ── CHAMPION VIEW ──────────────────────────────────────────────────────────
+async function renderChampion() {
+  const card = document.getElementById("champ-card");
+  card.innerHTML = '<div class="spinner">⏳ Načítám...</div>';
+  try {
+    const [d, resD] = await Promise.all([api("/api/champion"), api("/api/champion/result")]);
+    const open = d.open;
+    const pick = d.pick;
+    const championResult = resD.result;
+
+    let html = `
+      <div class="champion-title">🏆 Tip na vítěze šampionátu</div>
+      <div class="champion-sub">${
+        open
+          ? "Vyber jeden tým — uzavírá se prvním výkopem turnaje (11.6. 19:00 SELČ)."
+          : "Tipování je uzavřeno."
+      }</div>`;
+
+    if (championResult) {
+      html += `<div class="champion-result-badge">🥇 Vítěz: ${championResult}</div>`;
+    }
+
+    if (pick) {
+      html += `<p style="margin:10px 0 8px; font-size:13px; color:var(--muted);">Tvůj tip: <strong style="color:var(--gold)">${pick}</strong></p>`;
+    }
+
+    html += `<div class="champion-grid">`;
+    for (const team of d.teams) {
+      const sel = pick === team ? "selected" : "";
+      const dis = !open ? "disabled" : "";
+      html += `<button class="team-btn ${sel}" ${dis} onclick="pickChampion('${team}')">${team}</button>`;
+    }
+    html += `</div>`;
+    card.innerHTML = html;
+  } catch(e) {
+    card.innerHTML = `<p class="empty">Chyba: ${e.message}</p>`;
+  }
+}
+
+async function pickChampion(team) {
+  try {
+    await api("/api/champion","POST",{team});
+    renderChampion();
+  } catch(e) { alert(e.message); }
+}
+
+// ── LEADERBOARD ─────────────────────────────────────────────────────────────
+async function renderLeaderboard() {
+  const el = document.getElementById("lb-content");
+  el.innerHTML = '<div class="spinner">⏳ Načítám...</div>';
+  try {
+    const {leaderboard, champion_result} = await api("/api/leaderboard");
+    if (!leaderboard.length) { el.innerHTML='<p class="empty">Zatím žádní hráči.</p>'; return; }
+    const m = ["🥇","🥈","🥉"];
+    el.innerHTML = leaderboard.map((r,i) => `
+      <div class="lb-row${r.name===currentUser?" me":""}">
+        <span class="lb-pos">${m[i]||`${i+1}.`}</span>
+        <span class="lb-name">${r.name}${r.name===currentUser?" (ty)":""}</span>
+        <div class="lb-right">
+          <span class="lb-stat">🎯${r.exact}</span>
+          <span class="lb-stat">✅${r.correct}</span>
+          ${r.champ_pick?`<span class="lb-champ">🏆${r.champ_pick}${r.champ_bonus>0?" +5":""}` +`</span>`:""}
+          <span class="lb-pts">${r.total} b.</span>
+        </div>
+      </div>`).join("") +
+      `<p class="lb-note">🎯 přesný výsledek = 3 b. · ✅ správný výsledek = 1 b. · 🏆 vítěz šampionátu = 5 b.</p>`;
+  } catch(e) {
+    el.innerHTML = `<p class="empty">Chyba: ${e.message}</p>`;
+  }
+}
+
+// ── ADMIN PANEL ─────────────────────────────────────────────────────────────
+async function renderAdminPanel() {
+  // Naplnit select vítěze
+  const sel = document.getElementById("champ-select");
+  if (!sel.options.length) {
+    const d = await api("/api/champion");
+    d.teams.forEach(t => { const o=document.createElement("option"); o.value=o.text=t; sel.appendChild(o); });
+  }
+  // Zobrazit aktuálního vítěze
+  try {
+    const cr = await api("/api/champion/result");
+    document.getElementById("current-champ-result").textContent =
+      cr.result ? `Aktuálně nastavený vítěz: ${cr.result}` : "Vítěz ještě není nastaven";
+  } catch {}
+
+  // Seznam uživatelů
+  try {
+    const {users} = await api("/api/admin/users");
+    const ul = document.getElementById("user-list");
+    if (!users.length) { ul.innerHTML='<p class="empty">Zatím žádní hráči.</p>'; }
+    else ul.innerHTML = users.map(u => `
+      <div class="user-row">
+        <span class="user-name">${u.name}</span>
+        <button class="btn-del" onclick="deleteUser('${u.name}')">Smazat</button>
+      </div>`).join("");
+  } catch {}
+
+  // Přehled tipů
+  renderTipsOverview();
+}
+
+async function setChampionResult() {
+  const team = document.getElementById("champ-select").value;
+  if (!team) return;
+  if (!confirm(`Nastavit ${team} jako vítěze šampionátu?`)) return;
+  try {
+    await api("/api/champion/result","POST",{team});
+    document.getElementById("current-champ-result").textContent = `Aktuálně nastavený vítěz: ${team}`;
+    alert("Vítěz uložen!");
+    renderLeaderboard();
+  } catch(e) { alert(e.message); }
+}
+
+async function deleteUser(name) {
+  if (!confirm(`Opravdu smazat hráče "${name}"? Smažou se i všechny jeho tipy.`)) return;
+  try {
+    await api(`/api/admin/users/${encodeURIComponent(name)}`,"DELETE");
+    renderAdminPanel();
+  } catch(e) { alert(e.message); }
+}
+
+async function renderTipsOverview() {
+  const el = document.getElementById("tips-overview");
+  el.innerHTML = '<div class="spinner">⏳ Načítám...</div>';
+  try {
+    const {users, tips: allTips, champion_picks} = await api("/api/admin/all-tips");
+    if (!users.length) { el.innerHTML='<p class="empty">Žádní hráči.</p>'; return; }
+
+    // Tabulka: řádky = hráči, sloupce = skupiny
+    const groups = [...new Set(games.map(g=>g.group))].sort();
+    let html = `<div style="overflow-x:auto">
+      <table class="tips-table">
+        <thead><tr>
+          <th>Hráč</th>
+          <th>🏆 Vítěz</th>`;
+    // Jen odehrané nebo blízké zápasy
+    const shownGames = games.filter(g => results[g.id] || !g.tippable);
+    shownGames.forEach(g => {
+      html += `<th>${g.display_date} ${g.home} vs ${g.away}</th>`;
+    });
+    html += `</tr></thead><tbody>`;
+
+    users.forEach(name => {
+      const ut = allTips[name] || {};
+      html += `<tr><td><strong>${name}</strong></td>`;
+      html += `<td class="tip-cell">${champion_picks[name]||'<span class="no-tip">–</span>'}</td>`;
+      shownGames.forEach(g => {
+        const t = ut[g.id];
+        const r = results[g.id];
+        const pts = calcPoints(t, r);
+        if (!t) {
+          html += `<td class="no-tip">–</td>`;
+        } else {
+          const ptsTxt = pts===3?"🎯":pts===1?"✅":r?"❌":"";
+          html += `<td class="tip-cell">${t.home_score}:${t.away_score} ${ptsTxt}</td>`;
+        }
+      });
+      html += `</tr>`;
+    });
+    html += `</tbody></table></div>
+      <p style="font-size:11px; color:var(--muted); margin-top:8px;">Zobrazeny pouze zápasy s výsledkem nebo uzavřené.</p>`;
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = `<p class="empty">Chyba: ${e.message}</p>`;
+  }
+}
+</script>
+</body>
+</html>
