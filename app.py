@@ -377,6 +377,17 @@ def leaderboard():
     rows.sort(key=lambda x: x["total"], reverse=True)
     return jsonify(leaderboard=rows, champion_result=champ_result)
 
+@app.route("/api/results/<gid>", methods=["DELETE"])
+def delete_result(gid):
+    """Admin smaze vysledek zapasu - zapas se vrati do stavu bez vysledku."""
+    if session.get("user") != ADMIN:
+        return jsonify(error="Pouze admin"), 403
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM results WHERE game_id=%s", (gid,))
+        conn.commit()
+    return jsonify(ok=True)
+
 # ── ADMIN ─────────────────────────────────────────────────────────────────────
 
 @app.route("/api/admin/users")

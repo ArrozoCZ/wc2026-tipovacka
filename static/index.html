@@ -556,6 +556,11 @@ function gameCardHTML(g) {
         <span class="score-sep">:</span>
         <input class="score-box" type="number" min="0" max="30" value="${done?res.away_score:""}" placeholder="–"
           onchange="saveResult('${g.id}','away',this.value)">
+        ${done ? `<button onclick="resetResult('${g.id}')" style="
+          margin-left:8px; padding:4px 10px;
+          background:rgba(192,57,43,0.2); border:1px solid #c0392b;
+          color:#e74c3c; border-radius:7px; cursor:pointer; font-size:12px; font-weight:700;
+        " title="Smazat výsledek">✕ Reset</button>` : ""}
       </div>
     </div>` : "";
 
@@ -622,6 +627,17 @@ function saveResult(gid, side, val) {
   }, 700);
 }
 
+async function resetResult(gid) {
+  if (!confirm("Opravdu smazat výsledek tohoto zápasu?")) return;
+  try {
+    await api("/api/results/" + gid, "DELETE");
+    delete results[gid];
+    delete resBuffers[gid];
+    renderGames();
+    updateHeader();
+  } catch(e) { alert("Reset se nepodařil: " + e.message); }
+}
+
 // ── CHAMPION VIEW ──────────────────────────────────────────────────────────
 async function renderChampion() {
   const card = document.getElementById("champ-card");
@@ -636,7 +652,7 @@ async function renderChampion() {
       <div class="champion-title">🏆 Tip na vítěze šampionátu</div>
       <div class="champion-sub">${
         open
-          ? "Vyber jeden tým — uzavírá se prvním výkopem turnaje (11.6. 19:00 SELČ)."
+          ? "Vyber jeden tým — uzavírá se prvním výkopem turnaje (11.6. 21:00 SELČ)."
           : "Tipování je uzavřeno."
       }</div>`;
 
