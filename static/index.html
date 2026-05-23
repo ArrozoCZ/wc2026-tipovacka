@@ -296,6 +296,19 @@ input, button, select { font-family: inherit; }
       <button class="filter-btn" onclick="setFilter('open',this)">Otevřené</button>
       <button class="filter-btn" onclick="setFilter('untipped',this)">Bez tipu</button>
     </div>
+    <div id="tips-deadline-banner" style="
+      margin:8px 16px 0;
+      background:rgba(230,126,34,0.12);
+      border:1px solid rgba(230,126,34,0.4);
+      border-radius:10px;
+      padding:9px 14px;
+      font-size:13px;
+      color:#e67e22;
+      display:none;
+    ">
+      ⏰ <strong>Tipování se uzavírá prvním výkopem turnaje — 11.6.2026 v 21:00 SELČ.</strong>
+      Po té lze tipovat jen zápasy, které ještě nezačaly.
+    </div>
     <div class="game-list" id="game-list"></div>
   </div>
 
@@ -424,6 +437,8 @@ async function loadApp(name) {
   tips  = tData.tips;
   results = rData.results;
   updateHeader();
+  updateDeadlineBanner();
+  setInterval(updateDeadlineBanner, 60000);
   renderGames();
 
   clearInterval(pollIv);
@@ -462,6 +477,28 @@ function setFilter(f, btn) {
   document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
   renderGames();
+}
+
+function updateDeadlineBanner() {
+  const banner = document.getElementById("tips-deadline-banner");
+  if (!banner) return;
+  const firstKickoff = new Date("2026-06-11T21:00:00+02:00");
+  const now = new Date();
+  if (now >= firstKickoff) {
+    banner.style.display = "none";
+    return;
+  }
+  banner.style.display = "block";
+  const diff = Math.floor((firstKickoff - now) / 1000);
+  const days = Math.floor(diff / 86400);
+  const hours = Math.floor((diff % 86400) / 3600);
+  const mins = Math.floor((diff % 3600) / 60);
+  const parts = [];
+  if (days > 0) parts.push(`${days} dní`);
+  if (hours > 0) parts.push(`${hours} hod`);
+  parts.push(`${mins} min`);
+  const countdown = parts.join(" ");
+  banner.innerHTML = `⏰ <strong>Tipování se uzavírá za: ${countdown}</strong> &nbsp;·&nbsp; 11.6.2026 v 21:00 SELČ (první výkop).`;
 }
 
 function updateHeader() {
@@ -508,7 +545,7 @@ function gameCardHTML(g) {
 
   const tipH = tip ? tip.home_score : "";
   const tipA = tip ? tip.away_score : "";
-  const dis  = (!g.tippable || done) ? "disabled" : "";
+  const dis  = !g.tippable ? "disabled" : "";  // zamyká se pouze časem výkopu
 
   const adminRow = isAdmin() ? `
     <div class="tip-row admin-tip-row">
@@ -522,6 +559,7 @@ function gameCardHTML(g) {
       </div>
     </div>` : "";
 
+  // done = má výsledek (zlatá barva), locked = uplynul výkop ale bez výsledku (šedá)
   const cardCls = done ? "game-card done" : !g.tippable ? "game-card locked" : "game-card";
 
   return `
@@ -743,12 +781,15 @@ async function renderTipsOverview() {
       shownGames.forEach(g => {
         const t = ut[g.id];
         const r = results[g.id];
-        const pts = calcPoints(t, r);
+        // Admin API vrací {home, away}, normaliz na {home_score, away_score} pro calcPoints
+        const tNorm = t ? {home_score: t.home_score ?? t.home, away_score: t.away_score ?? t.away} : null;
+        const pts = calcPoints(tNorm, r);
         if (!t) {
           html += `<td class="no-tip" title="Bez tipu">–</td>`;
         } else {
           const icon = pts===3 ? "🎯" : pts===1 ? "✅" : r ? "❌" : "";
-          html += `<td class="tip-cell" style="white-space:nowrap">${t.home_score}:${t.away_score} ${icon}</td>`;
+          const hs = t.home_score ?? t.home; const as_ = t.away_score ?? t.away;
+          html += `<td class="tip-cell" style="white-space:nowrap">${hs}:${as_} ${icon}</td>`;
         }
       });
       html += `</tr>`;

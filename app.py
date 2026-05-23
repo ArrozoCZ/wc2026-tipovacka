@@ -101,12 +101,11 @@ def first_game_kickoff():
     return min(game_kickoff_cest(g) for g in GAMES)
 
 def is_tippable(game):
-    # Zamkne se výlučně časem výkopu daného zápasu.
-    # Zadání výsledku adminem NEZAMYKÁ tipování.
-    return datetime.datetime.now(CEST) < game_kickoff_cest(game)
+    # Všechna tipování (zápasy i vítěz) se zamykají najednou —
+    # prvním výkopem turnaje 11.6.2026 21:00 CEST.
+    return datetime.datetime.now(CEST) < first_game_kickoff()
 
 def champion_pick_open():
-    # Tip na vítěze se uzavře spolu s prvním výkopem turnaje.
     return datetime.datetime.now(CEST) < first_game_kickoff()
 
 GAMES_BY_ID = {g["id"]: g for g in GAMES}
