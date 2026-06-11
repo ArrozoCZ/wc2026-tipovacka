@@ -103,10 +103,10 @@ def first_game_kickoff():
 def is_tippable(game):
     # Všechna tipování (zápasy i vítěz) se zamykají najednou —
     # prvním výkopem turnaje 11.6.2026 21:00 CEST.
-    return datetime.datetime.now(CEST) < first_game_kickoff()
+    return False
 
 def champion_pick_open():
-    return datetime.datetime.now(CEST) < first_game_kickoff()
+    return False
 
 GAMES_BY_ID = {g["id"]: g for g in GAMES}
 ALL_TEAMS = sorted(set(t for g in GAMES for t in [g["home"], g["away"]]))
