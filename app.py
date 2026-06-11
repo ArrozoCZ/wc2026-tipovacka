@@ -98,7 +98,7 @@ def game_kickoff_cest(game):
     return CEST.localize(naive)
 
 def first_game_kickoff():
-    return min(game_kickoff_cest(g) for g in GAMES)
+    return CEST.localize(datetime.datetime(2020, 1, 1))
 
 def is_tippable(game):
     # Všechna tipování (zápasy i vítěz) se zamykají najednou —
