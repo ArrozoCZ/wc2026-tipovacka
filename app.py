@@ -226,7 +226,7 @@ def get_games():
             **g,
             "display_date": kickoff.strftime("%-d.%-m."),
             "display_time": kickoff.strftime("%H:%M"),
-            "tippable": now < kickoff,
+            "tippable": is_tippable(g),
             "minutes_to_kickoff": mins,
             "show_countdown": 0 < mins <= 120,
         })
